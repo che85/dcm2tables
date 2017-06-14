@@ -1,7 +1,6 @@
-import os, sys, json, pandas
+import os, sys, pandas
 from QDBDParser import QDBDParser
 from SRCDParser import SRCDParser
-import json
 
 #dcmqiPath = '/Users/fedorov/local/builds/dcmqi-refactored/dcmqi-build/bin'
 #dcmqiPath = '/Users/BillClifford/local/builds/dcmqi-mac/bin'
@@ -33,7 +32,7 @@ def main():
       try:
         dicomParser = SRCDParser(dcmName, tablesRules, tempPath=tempPath, dcmqiPath=dcmqiPath)
       except:
-        "Failed to read as DICOM:",dcmName
+        print "Failed to read as DICOM: %s" % dcmName
         continue
 
       dicomParser.parse()
@@ -53,7 +52,6 @@ def main():
     if len(tables[t]):
       tables[t] = pandas.DataFrame(tables[t])
 
-  for t in tables.keys():
     if type(tables[t]) == pandas.DataFrame:
       tables[t].to_csv(t+".tsv",index=False,sep='\t')
 
