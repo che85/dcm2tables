@@ -1,7 +1,15 @@
-import pydicom, os, json
+import pydicom
+import os
+import json
+import platform
+
+
+class DCMQINotFoundError(Exception):
+  pass
 
 
 class DICOMParser:
+
   def __init__(self,fileName,rulesDictionary,dcmqiPath=None,tempPath=None):
     try:
       self.dcm = pydicom.read_file(fileName)
@@ -23,7 +31,7 @@ class DICOMParser:
 
     modality = self.dcm.Modality
 
-    if modality in ["SR","PT","CT","SEG","RWV"]:
+    if modality in ["MR","SR","PT","CT","SEG","RWV"]:
       self.readTopLevelAttributes(self.dcm.Modality)
 
     if modality == "SEG":
@@ -36,12 +44,24 @@ class DICOMParser:
         # convert to JSON
         from subprocess import call
         outputJSON = os.path.join(self.tempPath,"measurements.json")
-        tid1500reader = os.path.join(self.dcmqiPath,"tid1500reader")
-        print tid1500reader
+        tid1500reader = self.getTID1500readerExecutable()
         call([tid1500reader,"--inputDICOM",self.fileName,"--outputMetadata",outputJSON])
         with open(outputJSON) as jsonFile:
           measurementsJSON = json.load(jsonFile)
           self.readMeasurements(measurementsJSON)
+
+  def getTID1500readerExecutable(self):
+    if not self.dcmqiPath:
+      raise DCMQINotFoundError()
+    if platform.system() in ['Darwin', 'Linux']:
+      tid1500reader = os.path.join(self.dcmqiPath,"tid1500reader")
+    elif platform.system() == 'Windows':
+      tid1500reader = os.path.join(self.dcmqiPath,"tid1500reader.exe")
+    else:
+      raise Exception('could not determine system type')
+    if not os.path.exists(tid1500reader):
+      raise Exception('Could not find dcmqi executable tid1500reader.')
+    return tid1500reader
 
   def readTopLevelAttributes(self,modality):
     self.tables[modality] = {}
