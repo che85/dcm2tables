@@ -1,5 +1,7 @@
 import pydicom
 import os
+import re
+import time
 import json
 import platform
 from collections import OrderedDict
@@ -12,22 +14,37 @@ class DCMQINotFoundError(Exception):
 class DICOMParser(object):
 
   def __init__(self,fileName,rulesDictionary=None,tempPath=None, dcmqiPath=None):
+    self.tables = dict()
+
+    self.tables["FileInfo"] = OrderedDict()
+
+    caseNumber = re.search('/Case(.+?)-', fileName)
+    self.tables["FileInfo"]["Case"] = caseNumber.group(1) if caseNumber else ""
+    self.tables["FileInfo"]["FileName"] = fileName
+    self.tables["FileInfo"]["SeriesDescription"] = os.path.basename(fileName)
+    self.tables["FileInfo"]["Created"] = time.ctime(os.path.getmtime(fileName))
+    self.tables["FileInfo"]["Modified"] = time.ctime(os.path.getctime(fileName))
+
     try:
       self.dcm = pydicom.read_file(fileName)
-    except:
-      print('Failed to read DICOM file using pydicom!')
-      raise
+    except Exception as exc:
+      print exc
+      # print('Failed to read DICOM file using pydicom!')
+      self.dcm = None
+
+    if not self.dcm:
+      return
 
     self.fileName = fileName
     self.rulesDictionary = rulesDictionary
     self.tempPath = tempPath
     self.dcmqiPath = dcmqiPath
 
-    self.tables = dict()
-
     self.tables["Instance2File"] = OrderedDict()
     self.tables["Instance2File"]["SOPInstanceUID"] = self.dcm.SOPInstanceUID
     self.tables["Instance2File"]["FileName"] = fileName
+
+    self.tables["FileInfo"]["SeriesDescription"] = self.dcm.SeriesDescription
 
   def getTables(self):
     return self.tables

@@ -3,6 +3,7 @@ import sys
 import pandas
 import logging
 import argparse
+from collections import OrderedDict
 from DICOMParser import DCMQINotFoundError
 from QDBDParser import QDBDParser
 from SRCDParser import SRCDParser
@@ -54,7 +55,8 @@ def main(argv):
   for root,dirs,files in os.walk(args.inputDirectory):
     for f in files:
       tables = {
-        "Instance2File": []
+        "Instance2File": [],
+        "FileInfo": []
       }
       for t in tablesRules.keys():
         tables[t] = []
@@ -67,18 +69,19 @@ def main(argv):
         print("Failed to read as DICOM: %s" % dcmName)
         continue
 
-      try:
-        dicomParser.parse()
-      except DCMQINotFoundError as exc:
-        print ("Failed to read DICOM %s: %s" % (dcmName, exc))
-        print ("Make sure that you specified dcmqi path either in your environment variable 'DCMQI_PATH' or as an "
-              "additional parameter '-dcmqi <DCMQI binary path>'")
-        print ("Skipping %s" % dcmName)
-      except Exception:
-        print ("Failed to parse: %s " % dcmName)
-        import traceback
-        traceback.print_exc()
-        return
+      if dicomParser.dcm:
+        try:
+          dicomParser.parse()
+        except DCMQINotFoundError as exc:
+          print ("Failed to read DICOM %s: %s" % (dcmName, exc))
+          print ("Make sure that you specified dcmqi path either in your environment variable 'DCMQI_PATH' or as an "
+                "additional parameter '-dcmqi <DCMQI binary path>'")
+          print ("Skipping %s" % dcmName)
+        except Exception:
+          print ("Failed to parse: %s " % dcmName)
+          import traceback
+          traceback.print_exc()
+          return
 
       dcmFileTables = dicomParser.getTables()
 
