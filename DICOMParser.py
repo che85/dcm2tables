@@ -18,7 +18,7 @@ class DICOMParser(object):
 
     self.tables["FileInfo"] = OrderedDict()
 
-    caseNumber = re.search('/Case(.+?)(-)?/', fileName)
+    caseNumber = re.search('Case([0-9]{3})(-)?', fileName)
     self.tables["FileInfo"]["Case"] = caseNumber.group(1) if caseNumber else ""
     self.tables["FileInfo"]["FileName"] = fileName
     self.tables["FileInfo"]["SeriesDescription"] = os.path.basename(fileName)
